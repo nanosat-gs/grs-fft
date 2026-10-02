@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "grs-fft"
+version = "0.1.0"
+description = "Bloco FFT da estação terrestre SpaceLab: espectro e medida do desvio do sinal, por rádio"
+readme = "README.md"
+requires-python = ">=3.11"
+
+# Duas dependências: o espectro é numpy puro, e o resto é ZMQ.
+dependencies = [
+    "numpy>=1.26",
+    "pyzmq>=25,<26",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0,<9.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
