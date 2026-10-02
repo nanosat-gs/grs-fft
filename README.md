@@ -35,8 +35,10 @@ centro e os pacotes voltaram.
     PUB  <bind> (:5582)   [b"afc.<rádio>", JSON]
                               uma por rajada: offset_hz (o resíduo, depois do
                               Doppler previsto), snr_db, bandwidth_hz, frames
-                          [b"fft.<rádio>", JSON, float32[512]]
-                              o espectro em dB, até 5 quadros por segundo
+                          [b"fft.<rádio>", JSON, float32[512], float32[zoom]]
+                              o espectro em dB, até 5 quadros por segundo: a
+                              banda inteira em 512 faixas e o zoom em resolução
+                              total (~59 Hz) na janela de busca
 
 Quem integra a medida é o **Station Manager** (`--fft-sources`), não este
 bloco: ele sabe se há passagem, de que satélite, em que rádio, e é a única

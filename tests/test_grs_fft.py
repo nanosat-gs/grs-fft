@@ -234,6 +234,13 @@ def test_servico_publica_medida_por_rajada_e_espectro():
     header = json.loads(seen["fft.vhf"][1])
     assert header["bins"] == 512
     assert len(np.frombuffer(seen["fft.vhf"][2], dtype=np.float32)) == 512
+    # O zoom cobre a janela de busca em resolução total (~58,6 Hz por bin).
+    zoom = np.frombuffer(seen["fft.vhf"][3], dtype=np.float32)
+    assert header["zoom_bins"] == len(zoom)
+    assert header["zoom_resolution_hz"] == pytest.approx(240_000 / 4096)
+    assert abs(header["zoom_start_hz"]) <= header["window_hz"]
+    assert header["zoom_start_hz"] + len(zoom) * header["zoom_resolution_hz"] == pytest.approx(
+        header["window_hz"] * 2 + header["zoom_start_hz"], abs=120)
 
 
 @pytest.mark.parametrize("changes, message", [

@@ -6,9 +6,13 @@
                               uma por RAJADA com sinal: o desvio do sinal em
                               relação ao centro da sintonia (o resíduo, depois
                               do Doppler previsto), SNR, largura, quadros
-                          [b"fft.<rádio>", JSON, float32[]]
-                              o espectro reduzido, em dB, a no máximo
-                              `spectrum_rate_hz` quadros por segundo
+                          [b"fft.<rádio>", JSON, float32[bins], float32[zoom]]
+                              o espectro em dB, a no máximo `spectrum_rate_hz`
+                              quadros por segundo: a banda inteira reduzida a
+                              `bins` faixas, e o ZOOM em resolução total na
+                              janela de busca (±window_hz) — é onde o sinal
+                              do satélite cabe, e a banda reduzida (~470 Hz
+                              por faixa) é grossa demais para vê-lo
 
 O IQ não sai desta máquina: são ~1,9 MB/s por rádio. O que atravessa a rede
 até o Station Manager são estas duas mensagens — bytes por rajada e algumas
@@ -158,9 +162,17 @@ class FftService:
         if now - self._last_spectrum < 1.0 / self.config.spectrum_rate_hz:
             return
         self._last_spectrum = now
+        inside = np.abs(self._analyzer.freqs_hz) <= self.config.window_hz
+        zoom = (10.0 * np.log10(power[inside] + 1e-20)).astype(np.float32)
         header = {"radio": self.config.radio, "t": time.time(),
                   "sample_rate_hz": self.config.sample_rate_hz,
-                  "bins": self.config.spectrum_bins}
+                  "bins": self.config.spectrum_bins,
+                  "window_hz": self.config.window_hz,
+                  "zoom_start_hz": float(self._analyzer.freqs_hz[inside][0]),
+                  "zoom_resolution_hz": self._analyzer.resolution_hz,
+                  "zoom_bins": int(zoom.size),
+                  "baud": self.config.baud,
+                  "expected_bandwidth_hz": self._expected_bw}
         values = np.asarray(decimate_db(power, self.config.spectrum_bins), dtype=np.float32)
-        self._pub.send_multipart([self._fft_topic, json.dumps(header).encode(), values.tobytes()],
-                                 zmq.NOBLOCK)
+        self._pub.send_multipart([self._fft_topic, json.dumps(header).encode(), values.tobytes(),
+                                  zoom.tobytes()], zmq.NOBLOCK)
